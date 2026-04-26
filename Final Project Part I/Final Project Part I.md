@@ -184,4 +184,4 @@ tags: [資料庫系統]
   已有借用、領用、維修或狀態異動紀錄的物品，不應直接刪除，應改為停用或封存，以保留完整使用歷程。
 
 ## 五、ER Diagram（Entity-Relationship Diagram）
-![Frame](https://hackmd.io/_uploads/HJ-jZuF6-e.png)
+![Frame](FPP_1_ERD.png)

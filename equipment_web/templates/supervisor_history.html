@@ -23,11 +23,13 @@
                 <th>存放空間</th>
                 <th>通報人</th>
                 <th>設備負責人</th>
+                <th>委託廠商</th>
                 <th>報修時間</th>
                 <th>維修狀態</th>
                 <th>維修費用</th>
                 <th>完成時間</th>
                 <th>更換零件</th>
+                <th>下次維護日期</th>
                 <th>處理結果</th>
             </tr>
             </thead>
@@ -40,6 +42,7 @@
                 <td>{{ row.space_name }}</td>
                 <td>{{ row.reporter_name }}（{{ row.reporter_id }}）</td>
                 <td>{{ row.handler_name }}（{{ row.handler_id }}）</td>
+                <td>{{ row.vendor_name or "未指定" }}</td>
                 <td>{{ row.repair_time }}</td>
                 <td>
                     {% if row.maint_status == "已完成" %}
@@ -51,11 +54,12 @@
                 <td>{{ "{:,}".format(row.repair_cost or 0) }}</td>
                 <td>{{ row.resolved_time or "未記錄" }}</td>
                 <td>{{ row.replaced_parts or "無" }}</td>
+                <td>{{ row.next_maint_date or "未設定" }}</td>
                 <td>{{ row.result or "無" }}</td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="12" class="text-center text-muted py-4">目前沒有資料</td>
+                <td colspan="14" class="text-center text-muted py-4">目前沒有資料</td>
             </tr>
             {% endfor %}
             </tbody>

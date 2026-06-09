@@ -16,7 +16,7 @@
                 <th>存放空間</th>
                 <th>空間類型</th>
                 <th>保固到期</th>
-                <th style="min-width: 520px;">維修回報</th>
+                <th style="min-width: 720px;">維修回報</th>
             </tr>
             </thead>
             <tbody>
@@ -37,8 +37,14 @@
                             <option value="{{ handler.handler_id }}">{{ handler.handler_name }}（{{ handler.handler_id }}）</option>
                             {% endfor %}
                         </select>
+                        <select class="form-select form-select-sm" name="vendor_id" required>
+                            <option value="">委託廠商</option>
+                            {% for vendor in vendors %}
+                            <option value="{{ vendor.vendor_id }}">{{ vendor.vendor_name }}</option>
+                            {% endfor %}
+                        </select>
                         <input type="text" class="form-control form-control-sm" name="issue_desc" placeholder="故障描述" required>
-                        <button type="submit" class="btn btn-sm btn-primary" {% if not handlers %}disabled{% endif %}>送出</button>
+                        <button type="submit" class="btn btn-sm btn-primary" {% if not handlers or not vendors %}disabled{% endif %}>送出</button>
                     </form>
                 </td>
             </tr>

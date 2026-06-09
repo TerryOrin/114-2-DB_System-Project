@@ -180,13 +180,17 @@ END//
 CREATE PROCEDURE sp_return_item (
     IN p_record_id INT,
     IN p_operator_id VARCHAR(50),
-    IN p_is_damaged BOOLEAN
+    IN p_is_damaged BOOLEAN,
+    IN p_handler_id VARCHAR(50),
+    IN p_vendor_id INT
 )
 BEGIN
     DECLARE v_internal_id VARCHAR(50);
     DECLARE v_borrow_status VARCHAR(50);
     DECLARE v_actual_return TIMESTAMP;
     DECLARE v_new_status VARCHAR(50);
+    DECLARE v_handler_count INT DEFAULT 0;
+    DECLARE v_vendor_count INT DEFAULT 0;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -222,6 +226,36 @@ BEGIN
     WHERE record_id = p_record_id;
 
     IF p_is_damaged THEN
+        IF p_handler_id IS NULL OR TRIM(p_handler_id) = '' THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '歸還時通報損壞必須指定設備負責人';
+        END IF;
+
+        IF p_vendor_id IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '歸還時通報損壞必須指定委託廠商';
+        END IF;
+
+        SELECT COUNT(*)
+        INTO v_handler_count
+        FROM EQUIPMENT_SUPERVISOR
+        WHERE user_id = p_handler_id;
+
+        IF v_handler_count = 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '查無此設備負責人';
+        END IF;
+
+        SELECT COUNT(*)
+        INTO v_vendor_count
+        FROM VENDOR
+        WHERE vendor_id = p_vendor_id;
+
+        IF v_vendor_count = 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '查無此維護廠商';
+        END IF;
+
         SET v_new_status = '維修中';
         SET @status_reason = '設備歸還時通報損壞，狀態改為維修中';
     ELSE
@@ -234,6 +268,36 @@ BEGIN
     UPDATE ITEM
     SET current_status = v_new_status
     WHERE internal_id = v_internal_id;
+
+    IF p_is_damaged THEN
+        INSERT INTO MAINTENANCE_TICKET (
+            internal_id,
+            reporter_id,
+            handler_id,
+            vendor_id,
+            repair_time,
+            issue_desc,
+            maint_status,
+            repair_cost,
+            resolved_time,
+            replaced_parts,
+            next_maint_date,
+            result
+        ) VALUES (
+            v_internal_id,
+            p_operator_id,
+            p_handler_id,
+            p_vendor_id,
+            CURRENT_TIMESTAMP,
+            '設備歸還時通報損壞',
+            '待處理',
+            0,
+            NULL,
+            NULL,
+            NULL,
+            NULL
+        );
+    END IF;
 
     COMMIT;
 
@@ -330,6 +394,7 @@ END//
 CREATE PROCEDURE sp_close_maintenance_ticket (
     IN p_ticket_id INT,
     IN p_operator_id VARCHAR(50),
+    IN p_vendor_id INT,
     IN p_repair_cost INT,
     IN p_replaced_parts VARCHAR(255),
     IN p_next_maint_date DATE,
@@ -339,6 +404,7 @@ CREATE PROCEDURE sp_close_maintenance_ticket (
 BEGIN
     DECLARE v_internal_id VARCHAR(50);
     DECLARE v_maint_status VARCHAR(50);
+    DECLARE v_vendor_count INT DEFAULT 0;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -372,8 +438,24 @@ BEGIN
         SET MESSAGE_TEXT = '維修結案後設備狀態只能改為可用或停用';
     END IF;
 
+    IF p_vendor_id IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = '維修工單必須指定委託廠商';
+    END IF;
+
+    SELECT COUNT(*)
+    INTO v_vendor_count
+    FROM VENDOR
+    WHERE vendor_id = p_vendor_id;
+
+    IF v_vendor_count = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = '查無此維護廠商';
+    END IF;
+
     UPDATE MAINTENANCE_TICKET
     SET maint_status = '已完成',
+        vendor_id = p_vendor_id,
         repair_cost = p_repair_cost,
         resolved_time = CURRENT_TIMESTAMP,
         replaced_parts = p_replaced_parts,

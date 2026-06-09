@@ -12,56 +12,88 @@
     </div>
 </div>
 
-<div class="panel">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead>
-            <tr>
-                <th>工單編號</th>
-                <th>內部唯一編號</th>
-                <th>物品名稱</th>
-                <th>存放空間</th>
-                <th>通報人</th>
-                <th>設備負責人</th>
-                <th>報修時間</th>
-                <th>故障描述</th>
-                <th>維修狀態</th>
-                <th style="min-width: 820px;">結案</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for row in rows %}
-            <tr>
-                <td>{{ row.ticket_id }}</td>
-                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
-                <td>{{ row.item_name }}</td>
-                <td>{{ row.space_name }}</td>
-                <td>{{ row.reporter_name }}（{{ row.reporter_id }}）</td>
-                <td>{{ row.handler_name }}（{{ row.handler_id }}）</td>
-                <td>{{ row.repair_time }}</td>
-                <td>{{ row.issue_desc }}</td>
-                <td><span class="badge text-bg-warning">{{ row.maint_status }}</span></td>
-                <td>
-                    <form class="close-form-grid" method="post" action="{{ url_for('close_maintenance_ticket', ticket_id=row.ticket_id) }}">
-                        <input type="number" min="0" step="1" class="form-control form-control-sm" name="repair_cost" placeholder="費用" value="0" required>
-                        <input type="text" class="form-control form-control-sm" name="replaced_parts" placeholder="更換零件">
-                        <input type="date" class="form-control form-control-sm" name="next_maint_date" aria-label="下次維護日期">
-                        <select class="form-select form-select-sm" name="item_new_status">
-                            <option value="可用">可用</option>
-                            <option value="停用">停用</option>
-                        </select>
-                        <input type="text" class="form-control form-control-sm" name="result" placeholder="維修結果" required>
-                        <button type="submit" class="btn btn-sm btn-primary">結案</button>
-                    </form>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="10" class="text-center text-muted py-4">目前沒有資料</td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+{% if rows %}
+<div class="work-order-list">
+    {% for row in rows %}
+    <section class="panel work-order">
+        <div class="panel-header work-order-header">
+            <div>
+                <div class="work-order-title">
+                    工單 #{{ row.ticket_id }}
+                    <span class="badge badge-soft">{{ row.internal_id }}</span>
+                </div>
+                <div class="text-muted-small">{{ row.item_name }}｜{{ row.space_name }}</div>
+            </div>
+            <span class="badge text-bg-warning">{{ row.maint_status }}</span>
+        </div>
+        <div class="panel-body">
+            <div class="work-order-meta">
+                <div>
+                    <div class="meta-label">通報人</div>
+                    <div>{{ row.reporter_name }}（{{ row.reporter_id }}）</div>
+                </div>
+                <div>
+                    <div class="meta-label">設備負責人</div>
+                    <div>{{ row.handler_name }}（{{ row.handler_id }}）</div>
+                </div>
+                <div>
+                    <div class="meta-label">委託廠商</div>
+                    <div>{{ row.vendor_name or "未指定" }}</div>
+                </div>
+                <div>
+                    <div class="meta-label">報修時間</div>
+                    <div>{{ row.repair_time }}</div>
+                </div>
+                <div class="work-order-issue">
+                    <div class="meta-label">故障描述</div>
+                    <div>{{ row.issue_desc }}</div>
+                </div>
+            </div>
+
+            <form class="close-form-grid" method="post" action="{{ url_for('close_maintenance_ticket', ticket_id=row.ticket_id) }}">
+                <div>
+                    <label class="form-label" for="vendor_id_{{ row.ticket_id }}">委託廠商</label>
+                    <select class="form-select form-select-sm" id="vendor_id_{{ row.ticket_id }}" name="vendor_id" required>
+                        <option value="">請選擇</option>
+                        {% for vendor in vendors %}
+                        <option value="{{ vendor.vendor_id }}" {% if row.vendor_id == vendor.vendor_id %}selected{% endif %}>{{ vendor.vendor_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="repair_cost_{{ row.ticket_id }}">維修費用（元）</label>
+                    <input type="number" min="0" step="1" class="form-control form-control-sm" id="repair_cost_{{ row.ticket_id }}" name="repair_cost" value="0" required>
+                </div>
+                <div>
+                    <label class="form-label" for="replaced_parts_{{ row.ticket_id }}">更換零件</label>
+                    <input type="text" class="form-control form-control-sm" id="replaced_parts_{{ row.ticket_id }}" name="replaced_parts" placeholder="無則留空">
+                </div>
+                <div>
+                    <label class="form-label" for="next_maint_date_{{ row.ticket_id }}">下次維護日期</label>
+                    <input type="date" class="form-control form-control-sm" id="next_maint_date_{{ row.ticket_id }}" name="next_maint_date">
+                </div>
+                <div>
+                    <label class="form-label" for="item_new_status_{{ row.ticket_id }}">結案後設備狀態</label>
+                    <select class="form-select form-select-sm" id="item_new_status_{{ row.ticket_id }}" name="item_new_status">
+                        <option value="可用">可用</option>
+                        <option value="停用">停用</option>
+                    </select>
+                </div>
+                <div class="close-result-field">
+                    <label class="form-label" for="result_{{ row.ticket_id }}">維修結果</label>
+                    <input type="text" class="form-control form-control-sm" id="result_{{ row.ticket_id }}" name="result" placeholder="例如：已更換噴頭並測試正常" required>
+                </div>
+                <div class="close-submit-field">
+                    <button type="submit" class="btn btn-primary">結案</button>
+                </div>
+            </form>
+        </div>
+    </section>
+    {% endfor %}
 </div>
+{% else %}
+<div class="panel">
+    <div class="panel-body text-center text-muted py-4">目前沒有資料</div>
+</div>
+{% endif %}
 {% endblock %}

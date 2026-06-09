@@ -136,6 +136,16 @@ def load_admin_form_options():
     return spaces, users
 
 
+def load_vendors():
+    return fetch_all(
+        """
+        SELECT vendor_id, vendor_name, vendor_contact
+        FROM VENDOR
+        ORDER BY vendor_id
+        """
+    )
+
+
 @app.route("/")
 def index():
     if "user_id" in session:
@@ -220,7 +230,20 @@ def student_returns():
         """,
         (session["user_id"],),
     )
-    return render_template("student_returns.html", rows=rows)
+    handlers = fetch_all(
+        """
+        SELECT *
+        FROM vw_Student_Maintenance_Handlers
+        ORDER BY handler_id
+        """
+    )
+    vendors = load_vendors()
+    return render_template(
+        "student_returns.html",
+        rows=rows,
+        handlers=handlers,
+        vendors=vendors,
+    )
 
 
 @app.route("/student/return/<int:record_id>", methods=["POST"])
@@ -240,9 +263,24 @@ def return_item(record_id):
         return redirect(url_for("student_returns"))
 
     is_damaged = 1 if request.form.get("is_damaged") == "1" else 0
+    handler_id = None
+    vendor_id = None
+
+    if is_damaged:
+        handler_id = request.form.get("handler_id", "").strip()
+        if not handler_id:
+            flash("歸還時通報損壞，請選擇設備負責人。", "warning")
+            return redirect(url_for("student_returns"))
+
+        try:
+            vendor_id = parse_int_form("vendor_id", "委託廠商", min_value=1)
+        except ValueError as error:
+            flash(str(error), "warning")
+            return redirect(url_for("student_returns"))
+
     return call_procedure(
-        "CALL sp_return_item(%s, %s, %s)",
-        (record_id, session["user_id"], is_damaged),
+        "CALL sp_return_item(%s, %s, %s, %s, %s)",
+        (record_id, session["user_id"], is_damaged, handler_id, vendor_id),
         "歸還完成，設備狀態已由資料庫交易同步更新。",
         "student_returns",
     )
@@ -300,10 +338,12 @@ def student_maintenance_report():
         ORDER BY handler_id
         """
     )
+    vendors = load_vendors()
     return render_template(
         "student_maintenance_report.html",
         rows=rows,
         handlers=handlers,
+        vendors=vendors,
     )
 
 
@@ -311,6 +351,12 @@ def student_maintenance_report():
 @role_required(ROLE_STUDENT)
 def create_maintenance_ticket(internal_id):
     handler_id = request.form.get("handler_id", "").strip()
+    try:
+        vendor_id = parse_int_form("vendor_id", "委託廠商", min_value=1)
+    except ValueError as error:
+        flash(str(error), "warning")
+        return redirect(url_for("student_maintenance_report"))
+
     issue_desc = request.form.get("issue_desc", "").strip()
 
     if not handler_id:
@@ -323,7 +369,7 @@ def create_maintenance_ticket(internal_id):
 
     return call_procedure(
         "CALL sp_create_maintenance_ticket(%s, %s, %s, %s, %s)",
-        (internal_id, session["user_id"], handler_id, None, issue_desc),
+        (internal_id, session["user_id"], handler_id, vendor_id, issue_desc),
         "維修工單已送出，設備狀態已由資料庫交易同步更新。",
         "student_maintenance_report",
     )
@@ -341,7 +387,8 @@ def supervisor_tasks():
         """,
         (session["user_id"],),
     )
-    return render_template("supervisor_tasks.html", rows=rows)
+    vendors = load_vendors()
+    return render_template("supervisor_tasks.html", rows=rows, vendors=vendors)
 
 
 @app.route("/supervisor/history")
@@ -363,6 +410,12 @@ def supervisor_history():
 @role_required(ROLE_SUPERVISOR)
 def close_maintenance_ticket(ticket_id):
     try:
+        vendor_id = parse_int_form("vendor_id", "委託廠商", min_value=1)
+    except ValueError as error:
+        flash(str(error), "warning")
+        return redirect(url_for("supervisor_tasks"))
+
+    try:
         repair_cost = int(request.form.get("repair_cost", "0") or 0)
     except ValueError:
         flash("維修費用必須是整數。", "danger")
@@ -378,10 +431,11 @@ def close_maintenance_ticket(ticket_id):
         return redirect(url_for("supervisor_tasks"))
 
     return call_procedure(
-        "CALL sp_close_maintenance_ticket(%s, %s, %s, %s, %s, %s, %s)",
+        "CALL sp_close_maintenance_ticket(%s, %s, %s, %s, %s, %s, %s, %s)",
         (
             ticket_id,
             session["user_id"],
+            vendor_id,
             repair_cost,
             replaced_parts,
             next_maint_date,

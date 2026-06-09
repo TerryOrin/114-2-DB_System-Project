@@ -97,20 +97,14 @@ body {
 
 .maintenance-report-grid {
     display: grid;
-    grid-template-columns: 170px minmax(220px, 1fr) auto;
+    grid-template-columns: 150px 170px minmax(220px, 1fr) auto;
     gap: 8px;
 }
 
 .return-form-grid {
     display: grid;
-    grid-template-columns: minmax(130px, 1fr) auto;
+    grid-template-columns: minmax(130px, auto) 170px 190px auto;
     align-items: center;
-    gap: 8px;
-}
-
-.close-form-grid {
-    display: grid;
-    grid-template-columns: 110px 150px 150px 150px minmax(190px, 1fr) auto;
     gap: 8px;
 }
 
@@ -138,6 +132,71 @@ body {
     margin-bottom: 16px;
 }
 
+.work-order-list {
+    display: grid;
+    gap: 16px;
+}
+
+.work-order-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.work-order-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.work-order-meta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 12px 18px;
+    margin-bottom: 18px;
+}
+
+.work-order-issue {
+    grid-column: 1 / -1;
+}
+
+.meta-label {
+    color: var(--muted);
+    font-size: 0.84rem;
+    margin-bottom: 2px;
+}
+
+.close-form-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(140px, 1fr));
+    gap: 12px;
+    align-items: end;
+    border-top: 1px solid var(--card-border);
+    padding-top: 16px;
+}
+
+.close-form-grid .form-label {
+    color: #475569;
+    font-size: 0.86rem;
+    margin-bottom: 4px;
+}
+
+.close-result-field {
+    grid-column: span 4;
+}
+
+.close-submit-field {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.close-submit-field .btn {
+    min-width: 96px;
+}
+
 @media (max-width: 992px) {
     .form-inline-grid,
     .consume-form-grid,
@@ -146,5 +205,22 @@ body {
     .close-form-grid,
     .admin-status-grid {
         grid-template-columns: 1fr;
+    }
+
+    .work-order-meta,
+    .close-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .close-result-field {
+        grid-column: auto;
+    }
+
+    .close-submit-field {
+        justify-content: stretch;
+    }
+
+    .close-submit-field .btn {
+        width: 100%;
     }
 }

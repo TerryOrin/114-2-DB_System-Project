@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}庫存預警｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="page-title">低庫存耗材預警</div>
+<div class="page-subtitle">資料來源：vw_Admin_Consumable_Alert</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>內部唯一編號</th>
+                <th>耗材名稱</th>
+                <th>存放空間</th>
+                <th>目前庫存</th>
+                <th>最低庫存</th>
+                <th>單位</th>
+                <th>警示等級</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr class="{% if row.stock_quantity <= row.min_stock %}alert-row{% endif %}">
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td>{{ row.space_name }}</td>
+                <td>{{ row.stock_quantity }}</td>
+                <td>{{ row.min_stock }}</td>
+                <td>{{ row.unit }}</td>
+                <td>
+                    {% if row.alert_level == "已無庫存" %}
+                    <span class="badge text-bg-danger">{{ row.alert_level }}</span>
+                    {% else %}
+                    <span class="badge text-bg-warning">{{ row.alert_level }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}資產盤點｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="page-title">全系資產盤點</div>
+<div class="page-subtitle">資料來源：vw_Admin_Asset_Master</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>內部唯一編號</th>
+                <th>物品名稱</th>
+                <th>目前狀態</th>
+                <th>存放空間</th>
+                <th>財產編號</th>
+                <th>經費來源</th>
+                <th>取得金額</th>
+                <th>耐用年限</th>
+                <th>保管人</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr>
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td><span class="badge text-bg-secondary">{{ row.current_status }}</span></td>
+                <td>{{ row.space_name }}</td>
+                <td>{{ row.asset_id }}</td>
+                <td>{{ row.fund_source }}</td>
+                <td>{{ "{:,}".format(row.acquired_cost) }}</td>
+                <td>{{ row.lifespan_years }} 年</td>
+                <td>{{ row.custodian_name }}（{{ row.custodian_id }}）</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="9" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

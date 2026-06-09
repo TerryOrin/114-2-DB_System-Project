@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}權限不足｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-body text-center py-5">
+        <div class="page-title">權限不足</div>
+        <div class="page-subtitle">您目前的角色無法進入此頁面。</div>
+        <a class="btn btn-primary" href="{{ url_for('index') }}">回到我的首頁</a>
+    </div>
+</div>
+{% endblock %}

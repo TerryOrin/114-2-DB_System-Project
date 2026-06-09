@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}可領用耗材｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="page-title">可領用耗材</div>
+<div class="page-subtitle">資料來源：vw_Student_Available_Consumables</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>內部唯一編號</th>
+                <th>耗材名稱</th>
+                <th>目前狀態</th>
+                <th>存放空間</th>
+                <th>空間類型</th>
+                <th>目前庫存量</th>
+                <th>單位</th>
+                <th style="min-width: 360px;">領用</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr>
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td><span class="badge text-bg-success">{{ row.current_status }}</span></td>
+                <td>{{ row.space_name }}</td>
+                <td>{{ row.location_type }}</td>
+                <td>{{ row.stock_quantity }}</td>
+                <td>{{ row.unit }}</td>
+                <td>
+                    <form class="consume-form-grid" method="post" action="{{ url_for('consume_item', internal_id=row.internal_id) }}">
+                        <input type="number" min="1" step="1" class="form-control form-control-sm" name="amount" placeholder="數量" required>
+                        <input type="text" class="form-control form-control-sm" name="purpose" placeholder="用途" required>
+                        <button type="submit" class="btn btn-sm btn-primary">領用</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

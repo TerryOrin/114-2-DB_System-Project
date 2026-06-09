@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}審計軌跡｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="page-title">審計軌跡</div>
+<div class="page-subtitle">資料來源：vw_Admin_Audit_Trail</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>內部唯一編號</th>
+                <th>物品名稱</th>
+                <th>事件類型</th>
+                <th>事件時間</th>
+                <th>操作者</th>
+                <th>事件內容</th>
+                <th>備註</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr>
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td><span class="badge text-bg-info">{{ row.event_type }}</span></td>
+                <td>{{ row.event_time }}</td>
+                <td>{{ row.actor_name }}（{{ row.actor_id }}）</td>
+                <td>{{ row.event_detail }}</td>
+                <td>{{ row.note }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

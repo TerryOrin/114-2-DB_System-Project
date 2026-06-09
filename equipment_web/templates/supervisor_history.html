@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}歷史工單｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="toolbar-row">
+    <div>
+        <div class="page-title">被指派歷史工單</div>
+        <div class="page-subtitle mb-0">資料來源：vw_Supervisor_Maintenance_History，僅顯示目前登入者負責且已完成或取消的工單</div>
+    </div>
+    <div class="btn-group">
+        <a class="btn btn-outline-primary" href="{{ url_for('supervisor_tasks') }}">待辦工單</a>
+        <a class="btn btn-primary" href="{{ url_for('supervisor_history') }}">歷史工單</a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>工單編號</th>
+                <th>內部唯一編號</th>
+                <th>物品名稱</th>
+                <th>存放空間</th>
+                <th>通報人</th>
+                <th>設備負責人</th>
+                <th>報修時間</th>
+                <th>維修狀態</th>
+                <th>維修費用</th>
+                <th>完成時間</th>
+                <th>更換零件</th>
+                <th>處理結果</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.ticket_id }}</td>
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td>{{ row.space_name }}</td>
+                <td>{{ row.reporter_name }}（{{ row.reporter_id }}）</td>
+                <td>{{ row.handler_name }}（{{ row.handler_id }}）</td>
+                <td>{{ row.repair_time }}</td>
+                <td>
+                    {% if row.maint_status == "已完成" %}
+                    <span class="badge text-bg-success">{{ row.maint_status }}</span>
+                    {% else %}
+                    <span class="badge text-bg-secondary">{{ row.maint_status }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ "{:,}".format(row.repair_cost or 0) }}</td>
+                <td>{{ row.resolved_time or "未記錄" }}</td>
+                <td>{{ row.replaced_parts or "無" }}</td>
+                <td>{{ row.result or "無" }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="12" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}維修工單｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="toolbar-row">
+    <div>
+        <div class="page-title">被指派待辦工單</div>
+        <div class="page-subtitle mb-0">資料來源：vw_Supervisor_Assigned_Maintenance_Tasks，僅顯示目前登入者負責的待處理或處理中工單</div>
+    </div>
+    <div class="btn-group">
+        <a class="btn btn-primary" href="{{ url_for('supervisor_tasks') }}">待辦工單</a>
+        <a class="btn btn-outline-primary" href="{{ url_for('supervisor_history') }}">歷史工單</a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>工單編號</th>
+                <th>內部唯一編號</th>
+                <th>物品名稱</th>
+                <th>存放空間</th>
+                <th>通報人</th>
+                <th>設備負責人</th>
+                <th>報修時間</th>
+                <th>故障描述</th>
+                <th>維修狀態</th>
+                <th style="min-width: 820px;">結案</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.ticket_id }}</td>
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td>{{ row.space_name }}</td>
+                <td>{{ row.reporter_name }}（{{ row.reporter_id }}）</td>
+                <td>{{ row.handler_name }}（{{ row.handler_id }}）</td>
+                <td>{{ row.repair_time }}</td>
+                <td>{{ row.issue_desc }}</td>
+                <td><span class="badge text-bg-warning">{{ row.maint_status }}</span></td>
+                <td>
+                    <form class="close-form-grid" method="post" action="{{ url_for('close_maintenance_ticket', ticket_id=row.ticket_id) }}">
+                        <input type="number" min="0" step="1" class="form-control form-control-sm" name="repair_cost" placeholder="費用" value="0" required>
+                        <input type="text" class="form-control form-control-sm" name="replaced_parts" placeholder="更換零件">
+                        <input type="date" class="form-control form-control-sm" name="next_maint_date" aria-label="下次維護日期">
+                        <select class="form-select form-select-sm" name="item_new_status">
+                            <option value="可用">可用</option>
+                            <option value="停用">停用</option>
+                        </select>
+                        <input type="text" class="form-control form-control-sm" name="result" placeholder="維修結果" required>
+                        <button type="submit" class="btn btn-sm btn-primary">結案</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="10" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

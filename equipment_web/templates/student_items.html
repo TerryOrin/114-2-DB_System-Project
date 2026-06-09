@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}可借用設備｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="page-title">可借用設備</div>
+<div class="page-subtitle">資料來源：vw_Student_Available_Borrowable_Items</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>內部唯一編號</th>
+                <th>物品名稱</th>
+                <th>管理類型</th>
+                <th>目前狀態</th>
+                <th>存放空間</th>
+                <th>規格</th>
+                <th>是否需歸還</th>
+                <th style="min-width: 290px;">借用</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr>
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td>{{ row.manage_type }}</td>
+                <td><span class="badge text-bg-success">{{ row.current_status }}</span></td>
+                <td>{{ row.space_name }}</td>
+                <td>{{ row.specification or "財產設備" }}</td>
+                <td>{{ "是" if row.need_return else "是" }}</td>
+                <td>
+                    <form class="form-inline-grid" method="post" action="{{ url_for('borrow_item', internal_id=row.internal_id) }}">
+                        <input type="datetime-local" class="form-control form-control-sm" name="expected_return" aria-label="預計歸還時間">
+                        <button type="submit" class="btn btn-sm btn-primary">借用</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

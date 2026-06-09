@@ -1,0 +1,128 @@
+:root {
+    --page-bg: #f4f6f8;
+    --card-border: #d9e0e7;
+    --brand: #1f5f8b;
+    --brand-dark: #174768;
+    --muted: #6b7280;
+}
+
+body {
+    background: var(--page-bg);
+    color: #1f2937;
+    font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.navbar {
+    background: var(--brand);
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.page-shell {
+    padding-top: 28px;
+    padding-bottom: 40px;
+}
+
+.page-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.page-subtitle {
+    color: var(--muted);
+    margin-bottom: 20px;
+}
+
+.panel {
+    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.panel-header {
+    border-bottom: 1px solid var(--card-border);
+    padding: 16px 18px;
+}
+
+.panel-body {
+    padding: 18px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background: #eef3f7;
+    color: #334155;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.table td,
+.table th {
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f7fafc;
+}
+
+.badge-soft {
+    border: 1px solid rgba(31, 95, 139, 0.25);
+    color: var(--brand-dark);
+    background: #e8f2f8;
+}
+
+.login-card {
+    max-width: 420px;
+    margin: 8vh auto 0;
+}
+
+.form-inline-grid {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) auto;
+    gap: 8px;
+}
+
+.consume-form-grid {
+    display: grid;
+    grid-template-columns: 90px minmax(150px, 1fr) auto;
+    gap: 8px;
+}
+
+.close-form-grid {
+    display: grid;
+    grid-template-columns: 110px 150px 150px 150px minmax(190px, 1fr) auto;
+    gap: 8px;
+}
+
+.text-muted-small {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.alert-row {
+    background: #fff7ed;
+}
+
+.toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 992px) {
+    .form-inline-grid,
+    .consume-form-grid,
+    .close-form-grid {
+        grid-template-columns: 1fr;
+    }
+}

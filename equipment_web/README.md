@@ -110,7 +110,7 @@ http://127.0.0.1:5000
 | 功能 | Stored Procedure |
 | --- | --- |
 | 借用設備 | `sp_borrow_item(p_internal_id, p_user_id, p_expected_return)` |
-| 歸還設備 | `sp_return_item(p_record_id, p_operator_id, p_is_damaged, p_handler_id, p_vendor_id)` |
+| 歸還設備 | `sp_return_item(p_record_id, p_operator_id, p_is_damaged)` |
 | 領用耗材 | `sp_consume_item(p_internal_id, p_user_id, p_amount, p_purpose)` |
 | 回報維修 | `sp_create_maintenance_ticket(p_internal_id, p_reporter_id, p_handler_id, p_vendor_id, p_issue_desc)` |
 | 維修工單結案 | `sp_close_maintenance_ticket(p_ticket_id, p_operator_id, p_vendor_id, p_repair_cost, p_replaced_parts, p_next_maint_date, p_result, p_item_new_status)` |

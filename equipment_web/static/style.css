@@ -103,7 +103,7 @@ body {
 
 .return-form-grid {
     display: grid;
-    grid-template-columns: minmax(130px, auto) 170px 190px auto;
+    grid-template-columns: minmax(130px, 1fr) auto;
     align-items: center;
     gap: 8px;
 }

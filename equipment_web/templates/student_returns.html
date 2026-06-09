@@ -18,7 +18,7 @@
                 <th>借用時間</th>
                 <th>預計歸還</th>
                 <th>借用狀態</th>
-                <th style="min-width: 620px;">歸還</th>
+                <th style="min-width: 220px;">歸還</th>
             </tr>
             </thead>
             <tbody>
@@ -45,18 +45,6 @@
                             <input class="form-check-input" type="checkbox" value="1" id="damaged_{{ row.record_id }}" name="is_damaged">
                             <label class="form-check-label" for="damaged_{{ row.record_id }}">歸還時損壞</label>
                         </div>
-                        <select class="form-select form-select-sm" name="handler_id" aria-label="損壞時設備負責人">
-                            <option value="">損壞時設備負責人</option>
-                            {% for handler in handlers %}
-                            <option value="{{ handler.handler_id }}">{{ handler.handler_name }}（{{ handler.handler_id }}）</option>
-                            {% endfor %}
-                        </select>
-                        <select class="form-select form-select-sm" name="vendor_id" aria-label="損壞時委託廠商">
-                            <option value="">損壞時委託廠商</option>
-                            {% for vendor in vendors %}
-                            <option value="{{ vendor.vendor_id }}">{{ vendor.vendor_name }}</option>
-                            {% endfor %}
-                        </select>
                         <button type="submit" class="btn btn-sm btn-primary">歸還</button>
                     </form>
                 </td>

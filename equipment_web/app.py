@@ -230,20 +230,7 @@ def student_returns():
         """,
         (session["user_id"],),
     )
-    handlers = fetch_all(
-        """
-        SELECT *
-        FROM vw_Student_Maintenance_Handlers
-        ORDER BY handler_id
-        """
-    )
-    vendors = load_vendors()
-    return render_template(
-        "student_returns.html",
-        rows=rows,
-        handlers=handlers,
-        vendors=vendors,
-    )
+    return render_template("student_returns.html", rows=rows)
 
 
 @app.route("/student/return/<int:record_id>", methods=["POST"])
@@ -263,24 +250,9 @@ def return_item(record_id):
         return redirect(url_for("student_returns"))
 
     is_damaged = 1 if request.form.get("is_damaged") == "1" else 0
-    handler_id = None
-    vendor_id = None
-
-    if is_damaged:
-        handler_id = request.form.get("handler_id", "").strip()
-        if not handler_id:
-            flash("歸還時通報損壞，請選擇設備負責人。", "warning")
-            return redirect(url_for("student_returns"))
-
-        try:
-            vendor_id = parse_int_form("vendor_id", "委託廠商", min_value=1)
-        except ValueError as error:
-            flash(str(error), "warning")
-            return redirect(url_for("student_returns"))
-
     return call_procedure(
-        "CALL sp_return_item(%s, %s, %s, %s, %s)",
-        (record_id, session["user_id"], is_damaged, handler_id, vendor_id),
+        "CALL sp_return_item(%s, %s, %s)",
+        (record_id, session["user_id"], is_damaged),
         "歸還完成，設備狀態已由資料庫交易同步更新。",
         "student_returns",
     )

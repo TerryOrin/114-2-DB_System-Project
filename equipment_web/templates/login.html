@@ -5,13 +5,17 @@
 <div class="panel login-card">
     <div class="panel-header">
         <div class="page-title">設備管理與維護系統</div>
-        <div class="page-subtitle mb-0">請輸入測試資料中的 user_id</div>
+        <div class="page-subtitle mb-0">請輸入帳號與密碼</div>
     </div>
     <div class="panel-body">
         <form method="post" action="{{ url_for('login') }}">
             <div class="mb-3">
                 <label for="user_id" class="form-label">user_id</label>
                 <input type="text" class="form-control" id="user_id" name="user_id" placeholder="例如：U001" required autofocus>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">密碼</label>
+                <input type="password" class="form-control" id="password" name="password" required>
             </div>
             <button type="submit" class="btn btn-primary w-100">登入</button>
         </form>

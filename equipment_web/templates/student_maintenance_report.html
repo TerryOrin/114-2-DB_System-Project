@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}回報維修｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="page-title">回報維修</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>內部唯一編號</th>
+                <th>物品名稱</th>
+                <th>管理類型</th>
+                <th>目前狀態</th>
+                <th>存放空間</th>
+                <th>空間類型</th>
+                <th>保固到期</th>
+                <th style="min-width: 520px;">維修回報</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr>
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td>{{ row.manage_type }}</td>
+                <td><span class="badge text-bg-secondary">{{ row.current_status }}</span></td>
+                <td>{{ row.space_name }}</td>
+                <td>{{ row.location_type }}</td>
+                <td>{{ row.warranty_expiry or "未設定" }}</td>
+                <td>
+                    <form class="maintenance-report-grid" method="post" action="{{ url_for('create_maintenance_ticket', internal_id=row.internal_id) }}">
+                        <select class="form-select form-select-sm" name="handler_id" required>
+                            <option value="">設備負責人</option>
+                            {% for handler in handlers %}
+                            <option value="{{ handler.handler_id }}">{{ handler.handler_name }}（{{ handler.handler_id }}）</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" class="form-control form-control-sm" name="issue_desc" placeholder="故障描述" required>
+                        <button type="submit" class="btn btn-sm btn-primary" {% if not handlers %}disabled{% endif %}>送出</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

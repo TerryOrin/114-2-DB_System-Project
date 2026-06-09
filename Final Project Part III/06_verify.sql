@@ -1,10 +1,14 @@
--- 06_verify.sql
--- Equipment Management System verification queries
-
+/* =========================================================
+   Equipment Management System - 06_verify.sql
+   Purpose:
+   Show all inserted seed data in the SAME order as 04_test_seed_data.sql.
+   Target: MySQL 8.0 / MariaDB
+   ========================================================= */
 USE equipment_management;
 SET NAMES utf8mb4;
 
--- 1. Check all base table row counts
+SELECT 'Row counts in the same table order as 04_test_seed_data.sql' AS section;
+
 SELECT 'ROLE' AS table_name, COUNT(*) AS row_count FROM ROLE
 UNION ALL SELECT 'SPACE', COUNT(*) FROM SPACE
 UNION ALL SELECT 'VENDOR', COUNT(*) FROM VENDOR
@@ -20,103 +24,139 @@ UNION ALL SELECT 'BORROW_RECORD', COUNT(*) FROM BORROW_RECORD
 UNION ALL SELECT 'MAINTENANCE_TICKET', COUNT(*) FROM MAINTENANCE_TICKET
 UNION ALL SELECT 'STATUS_HISTORY', COUNT(*) FROM STATUS_HISTORY;
 
--- 2. Check role data
-SELECT * FROM ROLE ORDER BY role_id;
+SELECT '1. ROLE - inserted seed data' AS section;
+SELECT *
+FROM ROLE
+ORDER BY role_id;
 
--- 3. Check users and their roles
-SELECT u.user_id, u.user_name, u.email, r.role_name
-FROM `USER` u
-JOIN ROLE r ON u.role_id = r.role_id
-ORDER BY u.user_id;
+SELECT '2. SPACE - inserted seed data' AS section;
+SELECT *
+FROM SPACE
+ORDER BY space_id;
 
--- 4. Check ITEM category distribution
-SELECT manage_type, current_status, COUNT(*) AS item_count
+SELECT '3. VENDOR - inserted seed data' AS section;
+SELECT *
+FROM VENDOR
+ORDER BY vendor_id;
+
+SELECT '4. USER - inserted seed data' AS section;
+SELECT *
+FROM `USER`
+ORDER BY user_id;
+
+SELECT '4-1. DEPARTMENT_ADMINISTRATOR - inserted seed data' AS section;
+SELECT *
+FROM DEPARTMENT_ADMINISTRATOR
+ORDER BY user_id;
+
+SELECT '4-2. EQUIPMENT_SUPERVISOR - inserted seed data' AS section;
+SELECT *
+FROM EQUIPMENT_SUPERVISOR
+ORDER BY user_id;
+
+SELECT '5. ITEM - inserted seed data' AS section;
+SELECT *
 FROM ITEM
-GROUP BY manage_type, current_status
-ORDER BY manage_type, current_status;
+ORDER BY FIELD(
+    internal_id,
+    'A001','A002','A003','A004','A005','A006','A007','A008','A009','A010',
+    'R001','R002','R003','R004','R005','R006','R007','R008','R009','R010',
+    'C001','C002','C003','C004','C005','C006','C007','C008','C009','C010'
+);
 
--- 5. Check child-table integrity counts
-SELECT '財產設備 child rows' AS check_name, COUNT(*) AS cnt
-FROM ITEM i JOIN ASSET_DETAIL a ON i.internal_id = a.internal_id
-WHERE i.manage_type = '財產設備'
-UNION ALL
-SELECT '非列管設備 child rows', COUNT(*)
-FROM ITEM i JOIN REUSABLE_EQUIPMENT r ON i.internal_id = r.internal_id
-WHERE i.manage_type = '非列管設備'
-UNION ALL
-SELECT '耗材 child rows', COUNT(*)
-FROM ITEM i JOIN CONSUMABLE_DETAIL c ON i.internal_id = c.internal_id
-WHERE i.manage_type = '耗材';
+SELECT '6. ASSET_DETAIL - inserted seed data' AS section;
+SELECT *
+FROM ASSET_DETAIL
+ORDER BY asset_id;
 
--- 6. Check invalid consumable borrow records. Expected: 0 rows.
-SELECT br.*
-FROM BORROW_RECORD br
-JOIN ITEM i ON br.internal_id = i.internal_id
-WHERE i.manage_type = '耗材';
+SELECT '7. REUSABLE_EQUIPMENT - inserted seed data' AS section;
+SELECT *
+FROM REUSABLE_EQUIPMENT
+ORDER BY internal_id;
 
--- 7. Check invalid maintenance tickets for consumables or disposed items. Expected: 0 rows.
-SELECT mt.ticket_id, mt.internal_id, i.item_name, i.manage_type, i.current_status, mt.maint_status
-FROM MAINTENANCE_TICKET mt
-JOIN ITEM i ON mt.internal_id = i.internal_id
-WHERE i.manage_type = '耗材'
-   OR i.current_status = '報廢';
+SELECT '8. CONSUMABLE_DETAIL - inserted seed data' AS section;
+SELECT *
+FROM CONSUMABLE_DETAIL
+ORDER BY internal_id;
 
--- 8. Check consume records do not exceed current stock plus consumed amount.
--- This detects obviously inconsistent negative or impossible values. Expected: 0 rows.
-SELECT cr.record_id, cr.internal_id, cr.amount, cd.stock_quantity
-FROM CONSUME_RECORD cr
-JOIN CONSUMABLE_DETAIL cd ON cr.internal_id = cd.internal_id
-WHERE cr.amount <= 0 OR cd.stock_quantity < 0;
+SELECT '9. CONSUME_RECORD - inserted seed data' AS section;
+SELECT *
+FROM CONSUME_RECORD
+ORDER BY record_id;
 
--- 9. Check borrow time constraints. Expected: 0 rows.
+SELECT '10. BORROW_RECORD - inserted seed data' AS section;
 SELECT *
 FROM BORROW_RECORD
-WHERE (expected_return IS NOT NULL AND expected_return <= borrow_time)
-   OR (actual_return IS NOT NULL AND actual_return < borrow_time);
+ORDER BY record_id;
 
--- 10. Check maintenance time constraints. Expected: 0 rows.
+SELECT '11. MAINTENANCE_TICKET - inserted seed data' AS section;
 SELECT *
 FROM MAINTENANCE_TICKET
-WHERE (resolved_time IS NOT NULL AND resolved_time < repair_time)
-   OR (next_maint_date IS NOT NULL AND resolved_time IS NOT NULL AND next_maint_date <= DATE(resolved_time))
-   OR (next_maint_date IS NOT NULL AND resolved_time IS NULL AND next_maint_date <= DATE(repair_time));
+ORDER BY ticket_id;
 
--- 11. Check available views after 05_view.sql is sourced
-SHOW FULL TABLES WHERE Table_type = 'VIEW';
+SELECT '12. STATUS_HISTORY - inserted seed data' AS section;
+SELECT *
+FROM STATUS_HISTORY
+ORDER BY log_id;
 
--- 12. Sample view outputs
-SELECT * FROM vw_Student_Available_Borrowable_Items LIMIT 10;
-SELECT * FROM vw_Student_Available_Consumables;
-SELECT * FROM vw_Supervisor_Assigned_Maintenance_Tasks LIMIT 10;
-SELECT * FROM vw_Supervisor_Maintenance_History ORDER BY resolved_time DESC;
-SELECT * FROM vw_Admin_Asset_Master LIMIT 10;
-SELECT * FROM vw_Admin_Consumable_Alert LIMIT 10;
-SELECT * FROM vw_Admin_Maintenance_Ticket_Master ORDER BY repair_time DESC;
-SELECT * FROM vw_Admin_Audit_Trail ORDER BY event_time DESC LIMIT 20;
+SELECT 'View check - optional result preview' AS section;
 
--- 13. Verify student consumable view. Expected: 0 rows.
+SELECT 'vw_Student_Available_Borrowable_Items' AS view_name;
+SELECT *
+FROM vw_Student_Available_Borrowable_Items
+ORDER BY internal_id;
+
+SELECT 'vw_Student_Available_Consumables' AS view_name;
 SELECT *
 FROM vw_Student_Available_Consumables
-WHERE manage_type <> '耗材'
-   OR current_status <> '可用'
-   OR stock_quantity <= 0;
+ORDER BY internal_id;
 
--- 14. Verify supervisor maintenance history view.
+SELECT 'vw_Student_Current_Borrowed_Items' AS view_name;
+SELECT *
+FROM vw_Student_Current_Borrowed_Items
+ORDER BY user_id, borrow_time DESC, record_id DESC;
+
+SELECT 'vw_Student_Current_Borrowed_Items invalid rows - expected empty' AS view_name;
+SELECT *
+FROM vw_Student_Current_Borrowed_Items
+WHERE status NOT IN ('借用中', '逾期');
+
+SELECT 'vw_Student_Maintenance_Reportable_Items' AS view_name;
+SELECT *
+FROM vw_Student_Maintenance_Reportable_Items
+ORDER BY internal_id;
+
+SELECT 'vw_Student_Maintenance_Handlers' AS view_name;
+SELECT *
+FROM vw_Student_Maintenance_Handlers
+ORDER BY handler_id;
+
+SELECT 'vw_Supervisor_Assigned_Maintenance_Tasks' AS view_name;
+SELECT *
+FROM vw_Supervisor_Assigned_Maintenance_Tasks
+ORDER BY ticket_id;
+
+SELECT 'vw_Supervisor_Maintenance_History' AS view_name;
 SELECT *
 FROM vw_Supervisor_Maintenance_History
-ORDER BY resolved_time DESC;
+ORDER BY resolved_time DESC, ticket_id DESC;
 
+SELECT 'vw_Admin_Asset_Master' AS view_name;
 SELECT *
-FROM vw_Supervisor_Maintenance_History
-WHERE handler_id = 'U002'
-ORDER BY resolved_time DESC;
+FROM vw_Admin_Asset_Master
+ORDER BY internal_id;
 
--- 15. Verify administrator maintenance ticket master view.
+SELECT 'vw_Admin_Consumable_Alert' AS view_name;
+SELECT *
+FROM vw_Admin_Consumable_Alert
+ORDER BY internal_id;
+
+SELECT 'vw_Admin_Maintenance_Ticket_Master' AS view_name;
 SELECT *
 FROM vw_Admin_Maintenance_Ticket_Master
-ORDER BY repair_time DESC;
+ORDER BY repair_time DESC, ticket_id DESC;
 
+SELECT 'vw_Admin_Audit_Trail' AS view_name;
 SELECT *
-FROM vw_Admin_Maintenance_Ticket_Master
-WHERE maint_status = '已完成'
-ORDER BY resolved_time DESC;
+FROM vw_Admin_Audit_Trail
+ORDER BY event_time DESC, internal_id;

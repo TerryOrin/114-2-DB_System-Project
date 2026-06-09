@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}物品管理｜設備管理與維護系統{% endblock %}
+
+{% block content %}
+<div class="toolbar-row">
+    <div class="page-title">物品管理</div>
+    <a class="btn btn-primary" href="{{ url_for('admin_item_new') }}">新增物品</a>
+</div>
+
+<div class="panel mb-3">
+    <div class="panel-body">
+        <form class="row g-2 align-items-end" method="get" action="{{ url_for('admin_items') }}">
+            <div class="col-md-4">
+                <label class="form-label" for="type">管理類型</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">全部</option>
+                    {% for manage_type in manage_types %}
+                    <option value="{{ manage_type }}" {% if selected_type == manage_type %}selected{% endif %}>{{ manage_type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="status">狀態</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">全部</option>
+                    {% for status in statuses %}
+                    <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">篩選</button>
+                <a class="btn btn-outline-secondary" href="{{ url_for('admin_items') }}">清除</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>內部唯一編號</th>
+                <th>物品名稱</th>
+                <th>管理類型</th>
+                <th>目前狀態</th>
+                <th>存放空間</th>
+                <th>補充資訊</th>
+                <th style="min-width: 280px;">狀態異動</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+            <tr>
+                <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
+                <td>{{ row.item_name }}</td>
+                <td>{{ row.manage_type }}</td>
+                <td><span class="badge text-bg-secondary">{{ row.current_status }}</span></td>
+                <td>{{ row.space_name }}（{{ row.location_type }}）</td>
+                <td>
+                    {% if row.manage_type == "財產設備" %}
+                    財產編號：{{ row.asset_id or "未填" }}
+                    {% elif row.manage_type == "耗材" %}
+                    庫存：{{ row.stock_quantity }} / 最低 {{ row.min_stock }} {{ row.unit }}
+                    {% else %}
+                    數量：{{ row.quantity }}；{% if row.is_borrowable %}可借用{% else %}不可借用{% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    <form class="admin-status-grid" method="post" action="{{ url_for('admin_update_item_status', internal_id=row.internal_id) }}">
+                        <select class="form-select form-select-sm" name="status" required>
+                            <option value="停用">停用</option>
+                            <option value="報廢">報廢</option>
+                        </select>
+                        <input class="form-control form-control-sm" type="text" name="reason" placeholder="異動原因">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">套用</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">目前沒有資料</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

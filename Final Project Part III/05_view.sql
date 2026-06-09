@@ -12,6 +12,9 @@ DROP VIEW IF EXISTS vw_Admin_Consumable_Alert;
 DROP VIEW IF EXISTS vw_Admin_Asset_Master;
 DROP VIEW IF EXISTS vw_Supervisor_Maintenance_History;
 DROP VIEW IF EXISTS vw_Supervisor_Assigned_Maintenance_Tasks;
+DROP VIEW IF EXISTS vw_Student_Maintenance_Handlers;
+DROP VIEW IF EXISTS vw_Student_Maintenance_Reportable_Items;
+DROP VIEW IF EXISTS vw_Student_Current_Borrowed_Items;
 DROP VIEW IF EXISTS vw_Student_Available_Consumables;
 DROP VIEW IF EXISTS vw_Student_Available_Borrowable_Items;
 
@@ -68,7 +71,82 @@ WHERE i.manage_type = '耗材'
   AND c.stock_quantity > 0;
 
 /* ---------------------------------------------------------
-   3. 設備負責人：被指派維修待辦工單
+   3. 全系師生：目前借用中設備清單
+   - Used by return workflow
+   - Application must filter by user_id for the login user
+   --------------------------------------------------------- */
+CREATE OR REPLACE VIEW vw_Student_Current_Borrowed_Items AS
+SELECT
+    br.record_id,
+    br.internal_id,
+    i.item_name,
+    i.manage_type,
+    i.current_status,
+    s.space_id,
+    s.space_name,
+    s.location_type,
+    r.specification,
+    r.need_return,
+    br.user_id,
+    u.user_name,
+    br.borrow_time,
+    br.expected_return,
+    br.status
+FROM BORROW_RECORD br
+JOIN ITEM i
+    ON br.internal_id = i.internal_id
+JOIN SPACE s
+    ON i.space_id = s.space_id
+JOIN `USER` u
+    ON br.user_id = u.user_id
+LEFT JOIN REUSABLE_EQUIPMENT r
+    ON i.internal_id = r.internal_id
+WHERE br.status IN ('借用中', '逾期')
+  AND br.actual_return IS NULL;
+
+/* ---------------------------------------------------------
+   4. 全系師生：可回報維修設備清單
+   - Excludes consumables and scrapped items
+   - Excludes items that already have an open maintenance ticket
+   - Hides financial and custodian fields
+   --------------------------------------------------------- */
+CREATE OR REPLACE VIEW vw_Student_Maintenance_Reportable_Items AS
+SELECT
+    i.internal_id,
+    i.item_name,
+    i.manage_type,
+    i.current_status,
+    i.warranty_expiry,
+    s.space_id,
+    s.space_name,
+    s.location_type
+FROM ITEM i
+JOIN SPACE s
+    ON i.space_id = s.space_id
+WHERE i.manage_type IN ('財產設備', '非列管設備')
+  AND i.current_status <> '報廢'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM MAINTENANCE_TICKET mt
+      WHERE mt.internal_id = i.internal_id
+        AND mt.maint_status IN ('待處理', '處理中')
+  );
+
+/* ---------------------------------------------------------
+   5. 全系師生：可指派設備負責人清單
+   - Used by maintenance reporting form
+   --------------------------------------------------------- */
+CREATE OR REPLACE VIEW vw_Student_Maintenance_Handlers AS
+SELECT
+    u.user_id AS handler_id,
+    u.user_name AS handler_name
+FROM `USER` u
+JOIN ROLE r
+    ON u.role_id = r.role_id
+WHERE r.role_name = '設備負責人';
+
+/* ---------------------------------------------------------
+   6. 設備負責人：被指派維修待辦工單
    - Shows pending / processing tickets
    - Keeps handler_id so application can filter by login user
    --------------------------------------------------------- */
@@ -108,7 +186,7 @@ LEFT JOIN VENDOR v
 WHERE mt.maint_status IN ('待處理', '處理中');
 
 /* ---------------------------------------------------------
-   4. 設備負責人：被指派維修歷史工單
+   7. 設備負責人：被指派維修歷史工單
    - Shows completed / cancelled tickets
    - Application must filter by handler_id for the login user
    --------------------------------------------------------- */
@@ -149,7 +227,7 @@ LEFT JOIN VENDOR v
 WHERE mt.maint_status IN ('已完成', '取消');
 
 /* ---------------------------------------------------------
-   5. 系所管理員：全系財產設備資產總覽
+   8. 系所管理員：全系財產設備資產總覽
    --------------------------------------------------------- */
 CREATE OR REPLACE VIEW vw_Admin_Asset_Master AS
 SELECT
@@ -179,7 +257,7 @@ JOIN `USER` u
 WHERE i.manage_type = '財產設備';
 
 /* ---------------------------------------------------------
-   6. 系所管理員：低庫存耗材預警
+   9. 系所管理員：低庫存耗材預警
    --------------------------------------------------------- */
 CREATE OR REPLACE VIEW vw_Admin_Consumable_Alert AS
 SELECT
@@ -207,7 +285,7 @@ WHERE i.manage_type = '耗材'
   AND c.stock_quantity <= c.min_stock;
 
 /* ---------------------------------------------------------
-   7. 系所管理員：全系維修工單總覽
+   10. 系所管理員：全系維修工單總覽
    - Shows all maintenance ticket statuses
    - Complements audit trail; does not replace event history
    --------------------------------------------------------- */
@@ -248,7 +326,7 @@ LEFT JOIN VENDOR v
     ON mt.vendor_id = v.vendor_id;
 
 /* ---------------------------------------------------------
-   8. 系所管理員：審計軌跡 / 使用歷程追蹤
+   11. 系所管理員：審計軌跡 / 使用歷程追蹤
    - Integrates status history, borrow records, and maintenance tickets
    --------------------------------------------------------- */
 CREATE OR REPLACE VIEW vw_Admin_Audit_Trail AS

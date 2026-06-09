@@ -1,9 +1,11 @@
 {% extends "base.html" %}
-{% block title %}庫存預警｜設備管理與維護系統{% endblock %}
+{% block title %}耗材管理｜設備管理與維護系統{% endblock %}
 
 {% block content %}
-<div class="page-title">低庫存耗材預警</div>
-<div class="page-subtitle">資料來源：vw_Admin_Consumable_Alert</div>
+<div class="toolbar-row">
+    <div class="page-title">耗材管理</div>
+    <a class="btn btn-primary" href="{{ url_for('admin_item_new') }}">新增耗材</a>
+</div>
 
 <div class="panel">
     <div class="table-responsive">
@@ -12,7 +14,9 @@
             <tr>
                 <th>內部唯一編號</th>
                 <th>耗材名稱</th>
+                <th>目前狀態</th>
                 <th>存放空間</th>
+                <th>空間類型</th>
                 <th>目前庫存</th>
                 <th>最低庫存</th>
                 <th>單位</th>
@@ -24,21 +28,25 @@
             <tr class="{% if row.stock_quantity <= row.min_stock %}alert-row{% endif %}">
                 <td><span class="badge badge-soft">{{ row.internal_id }}</span></td>
                 <td>{{ row.item_name }}</td>
+                <td><span class="badge text-bg-secondary">{{ row.current_status }}</span></td>
                 <td>{{ row.space_name }}</td>
+                <td>{{ row.location_type }}</td>
                 <td>{{ row.stock_quantity }}</td>
                 <td>{{ row.min_stock }}</td>
                 <td>{{ row.unit }}</td>
                 <td>
                     {% if row.alert_level == "已無庫存" %}
                     <span class="badge text-bg-danger">{{ row.alert_level }}</span>
-                    {% else %}
+                    {% elif row.alert_level == "低於安全庫存" %}
                     <span class="badge text-bg-warning">{{ row.alert_level }}</span>
+                    {% else %}
+                    <span class="badge text-bg-success">{{ row.alert_level }}</span>
                     {% endif %}
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">目前沒有資料</td>
+                <td colspan="9" class="text-center text-muted py-4">目前沒有資料</td>
             </tr>
             {% endfor %}
             </tbody>

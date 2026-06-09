@@ -19,7 +19,9 @@
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 {% if session.get("role_name") == "全系師生" %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('student_items') }}">可借用設備</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('student_returns') }}">我的借用</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('student_consumables') }}">可領用耗材</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('student_maintenance_report') }}">回報維修</a></li>
                 {% endif %}
                 {% if session.get("role_name") == "設備負責人" %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('supervisor_tasks') }}">待辦工單</a></li>
@@ -27,7 +29,9 @@
                 {% endif %}
                 {% if session.get("role_name") == "系所管理員" %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_assets') }}">資產盤點</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_consumables') }}">低庫存耗材</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_items') }}">物品管理</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_item_new') }}">新增物品</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_consumables') }}">耗材管理</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_maintenance') }}">維修工單</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_audit') }}">審計軌跡</a></li>
                 {% endif %}

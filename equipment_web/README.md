@@ -113,7 +113,7 @@ http://127.0.0.1:5000
 | 歸還設備 | `sp_return_item(p_record_id, p_operator_id, p_is_damaged)` |
 | 領用耗材 | `sp_consume_item(p_internal_id, p_user_id, p_amount, p_purpose)` |
 | 回報維修 | `sp_create_maintenance_ticket(p_internal_id, p_reporter_id, p_handler_id, p_vendor_id, p_issue_desc)` |
-| 維修工單結案 | `sp_close_maintenance_ticket(p_ticket_id, p_operator_id, p_vendor_id, p_repair_cost, p_replaced_parts, p_next_maint_date, p_result, p_item_new_status)` |
+| 維修工單結案 | `sp_close_maintenance_ticket(p_ticket_id, p_operator_id, p_repair_cost, p_replaced_parts, p_next_maint_date, p_result, p_item_new_status)` |
 
 目前 SQL 檔案尚未提供：
 
@@ -144,14 +144,15 @@ http://127.0.0.1:5000
 
 - 學生頁只查 `vw_Student_Current_Borrowed_Items`。
 - 歸還前先用 View 確認 `record_id` 屬於目前登入者。
-- 歸還時只呼叫 `sp_return_item`。
+- 一般歸還只呼叫 `sp_return_item`。
 - Web 不直接 `UPDATE BORROW_RECORD`，也不直接 `UPDATE ITEM`。
-- 若勾選「歸還時損壞」，Procedure 會把設備狀態改為 `維修中`，並同步建立 `待處理` 維修工單；未勾選則改回 `可用`。
+- 若勾選「歸還時損壞」，Web 先呼叫 `sp_return_item` 把設備狀態改為 `維修中`，再由後端自動帶入預設設備負責人與維修廠商呼叫 `sp_create_maintenance_ticket` 建立 `待處理` 維修工單；全系師生不需也不能填寫維修廠商。
 
 學生回報維修設計：
 
 - 學生頁只查 `vw_Student_Maintenance_Reportable_Items` 與 `vw_Student_Maintenance_Handlers`。
 - 回報時只呼叫 `sp_create_maintenance_ticket`。
+- 維修廠商由後端自動帶入預設廠商，不顯示在全系師生前端。
 - Web 不直接 `INSERT MAINTENANCE_TICKET`，也不直接 `UPDATE ITEM`。
 - 資料庫 Trigger / Procedure 會攔截耗材、報廢設備與重複未結案維修工單。
 
@@ -257,14 +258,14 @@ python app.py
 5. 按下「借用」。
 6. 說明：Web 只呼叫 `sp_borrow_item`，資料庫使用 `FOR UPDATE` 鎖定設備列，避免多人同時借到同一項設備。
 7. 點選「我的借用」，展示剛借出的設備來自 `vw_Student_Current_Borrowed_Items`。
-8. 不勾選「歸還時損壞」，按下「歸還」。
-9. 說明：Web 只呼叫 `sp_return_item`，由資料庫交易把借用紀錄設為已歸還，並把設備狀態改回可用。
+8. 勾選「歸還時損壞」，按下「歸還」。
+9. 說明：Web 先呼叫 `sp_return_item` 完成歸還並把設備狀態改為維修中，再由後端自動帶入預設設備負責人與維修廠商呼叫 `sp_create_maintenance_ticket` 建立維修工單；學生端不會看到維修廠商欄位。
 10. 點選「可領用耗材」，展示資料來自 `vw_Student_Available_Consumables`。
 11. 選擇一筆耗材，填入數量 `1` 與用途 `課程測試`，按下「領用」。
 12. 說明：Web 只呼叫 `sp_consume_item`，不直接更新庫存表。
 13. 點選「回報維修」，展示資料來自 `vw_Student_Maintenance_Reportable_Items`。
 14. 選擇一項可報修設備，例如 `A002`。
-15. 選擇設備負責人 `U002`，故障描述填入 `畫面閃爍，請協助檢查`。
+15. 選擇設備負責人 `U002`，故障描述填入 `畫面閃爍，請協助檢查`；確認學生端沒有維修廠商欄位。
 16. 按下「送出」。
 17. 說明：Web 只呼叫 `sp_create_maintenance_ticket`，由資料庫交易建立工單並同步設備狀態為維修中。
 

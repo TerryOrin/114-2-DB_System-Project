@@ -52,15 +52,6 @@
 
             <form class="close-form-grid" method="post" action="{{ url_for('close_maintenance_ticket', ticket_id=row.ticket_id) }}">
                 <div>
-                    <label class="form-label" for="vendor_id_{{ row.ticket_id }}">委託廠商</label>
-                    <select class="form-select form-select-sm" id="vendor_id_{{ row.ticket_id }}" name="vendor_id" required>
-                        <option value="">請選擇</option>
-                        {% for vendor in vendors %}
-                        <option value="{{ vendor.vendor_id }}" {% if row.vendor_id == vendor.vendor_id %}selected{% endif %}>{{ vendor.vendor_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
                     <label class="form-label" for="repair_cost_{{ row.ticket_id }}">維修費用（元）</label>
                     <input type="number" min="0" step="1" class="form-control form-control-sm" id="repair_cost_{{ row.ticket_id }}" name="repair_cost" value="0" required>
                 </div>

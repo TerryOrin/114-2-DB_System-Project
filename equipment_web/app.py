@@ -118,6 +118,11 @@ def call_procedure(sql, params, success_message, redirect_endpoint, **redirect_v
     return redirect(url_for(redirect_endpoint, **redirect_values))
 
 
+def drain_cursor_results(cursor):
+    while cursor.nextset():
+        pass
+
+
 def load_admin_form_options():
     spaces = fetch_all(
         """
@@ -144,6 +149,30 @@ def load_vendors():
         ORDER BY vendor_id
         """
     )
+
+
+def load_default_maintenance_handler_id():
+    handler = fetch_one(
+        """
+        SELECT handler_id
+        FROM vw_Student_Maintenance_Handlers
+        ORDER BY handler_id
+        LIMIT 1
+        """
+    )
+    return handler["handler_id"] if handler else None
+
+
+def load_default_vendor_id():
+    vendor = fetch_one(
+        """
+        SELECT vendor_id
+        FROM VENDOR
+        ORDER BY vendor_id
+        LIMIT 1
+        """
+    )
+    return vendor["vendor_id"] if vendor else None
 
 
 @app.route("/")
@@ -238,7 +267,7 @@ def student_returns():
 def return_item(record_id):
     borrowed = fetch_one(
         """
-        SELECT record_id
+        SELECT record_id, internal_id
         FROM vw_Student_Current_Borrowed_Items
         WHERE record_id = %s
           AND user_id = %s
@@ -250,12 +279,54 @@ def return_item(record_id):
         return redirect(url_for("student_returns"))
 
     is_damaged = 1 if request.form.get("is_damaged") == "1" else 0
-    return call_procedure(
-        "CALL sp_return_item(%s, %s, %s)",
-        (record_id, session["user_id"], is_damaged),
-        "歸還完成，設備狀態已由資料庫交易同步更新。",
-        "student_returns",
-    )
+    handler_id = None
+    vendor_id = None
+    if is_damaged:
+        handler_id = load_default_maintenance_handler_id()
+        vendor_id = load_default_vendor_id()
+        if not handler_id or not vendor_id:
+            flash("目前缺少可指派的設備負責人或維修廠商，無法建立損壞維修工單。", "warning")
+            return redirect(url_for("student_returns"))
+
+    conn = get_connection()
+    return_completed = False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "CALL sp_return_item(%s, %s, %s)",
+                (record_id, session["user_id"], is_damaged),
+            )
+            drain_cursor_results(cursor)
+            return_completed = True
+
+            if is_damaged:
+                cursor.execute(
+                    "CALL sp_create_maintenance_ticket(%s, %s, %s, %s, %s)",
+                    (
+                        borrowed["internal_id"],
+                        session["user_id"],
+                        handler_id,
+                        vendor_id,
+                        "設備歸還時通報損壞",
+                    ),
+                )
+                drain_cursor_results(cursor)
+
+        conn.commit()
+        if is_damaged:
+            flash("歸還完成，並已自動建立維修工單。", "success")
+        else:
+            flash("歸還完成，設備狀態已由資料庫交易同步更新。", "success")
+    except pymysql.err.MySQLError as error:
+        conn.rollback()
+        if return_completed and is_damaged:
+            flash(f"歸還已完成，但維修工單建立失敗：{format_db_error(error)}", "danger")
+        else:
+            flash(f"操作失敗：{format_db_error(error)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("student_returns"))
 
 
 @app.route("/student/consumables")
@@ -310,12 +381,10 @@ def student_maintenance_report():
         ORDER BY handler_id
         """
     )
-    vendors = load_vendors()
     return render_template(
         "student_maintenance_report.html",
         rows=rows,
         handlers=handlers,
-        vendors=vendors,
     )
 
 
@@ -323,16 +392,15 @@ def student_maintenance_report():
 @role_required(ROLE_STUDENT)
 def create_maintenance_ticket(internal_id):
     handler_id = request.form.get("handler_id", "").strip()
-    try:
-        vendor_id = parse_int_form("vendor_id", "委託廠商", min_value=1)
-    except ValueError as error:
-        flash(str(error), "warning")
-        return redirect(url_for("student_maintenance_report"))
-
+    vendor_id = load_default_vendor_id()
     issue_desc = request.form.get("issue_desc", "").strip()
 
     if not handler_id:
         flash("請選擇設備負責人。", "warning")
+        return redirect(url_for("student_maintenance_report"))
+
+    if not vendor_id:
+        flash("目前缺少可指派的維修廠商，無法建立維修工單。", "warning")
         return redirect(url_for("student_maintenance_report"))
 
     if not issue_desc:
@@ -359,8 +427,7 @@ def supervisor_tasks():
         """,
         (session["user_id"],),
     )
-    vendors = load_vendors()
-    return render_template("supervisor_tasks.html", rows=rows, vendors=vendors)
+    return render_template("supervisor_tasks.html", rows=rows)
 
 
 @app.route("/supervisor/history")
@@ -382,12 +449,6 @@ def supervisor_history():
 @role_required(ROLE_SUPERVISOR)
 def close_maintenance_ticket(ticket_id):
     try:
-        vendor_id = parse_int_form("vendor_id", "委託廠商", min_value=1)
-    except ValueError as error:
-        flash(str(error), "warning")
-        return redirect(url_for("supervisor_tasks"))
-
-    try:
         repair_cost = int(request.form.get("repair_cost", "0") or 0)
     except ValueError:
         flash("維修費用必須是整數。", "danger")
@@ -403,11 +464,10 @@ def close_maintenance_ticket(ticket_id):
         return redirect(url_for("supervisor_tasks"))
 
     return call_procedure(
-        "CALL sp_close_maintenance_ticket(%s, %s, %s, %s, %s, %s, %s, %s)",
+        "CALL sp_close_maintenance_ticket(%s, %s, %s, %s, %s, %s, %s)",
         (
             ticket_id,
             session["user_id"],
-            vendor_id,
             repair_cost,
             replaced_parts,
             next_maint_date,

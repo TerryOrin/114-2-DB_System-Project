@@ -97,7 +97,7 @@ body {
 
 .maintenance-report-grid {
     display: grid;
-    grid-template-columns: 150px 170px minmax(220px, 1fr) auto;
+    grid-template-columns: 170px minmax(220px, 1fr) auto;
     gap: 8px;
 }
 
@@ -171,7 +171,7 @@ body {
 
 .close-form-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(140px, 1fr));
+    grid-template-columns: repeat(4, minmax(140px, 1fr));
     gap: 12px;
     align-items: end;
     border-top: 1px solid var(--card-border);
@@ -185,7 +185,7 @@ body {
 }
 
 .close-result-field {
-    grid-column: span 4;
+    grid-column: span 3;
 }
 
 .close-submit-field {

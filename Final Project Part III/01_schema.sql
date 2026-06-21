@@ -8,6 +8,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS STATUS_HISTORY;
+DROP TABLE IF EXISTS MAINTENANCE_PROCESS_RECORD;
 DROP TABLE IF EXISTS MAINTENANCE_TICKET;
 DROP TABLE IF EXISTS BORROW_RECORD;
 DROP TABLE IF EXISTS CONSUME_RECORD;
@@ -170,36 +171,42 @@ CREATE TABLE MAINTENANCE_TICKET (
     internal_id VARCHAR(50) NOT NULL,
     reporter_id VARCHAR(50) NOT NULL,
     handler_id VARCHAR(50),
-    vendor_id INT,
     repair_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     issue_desc TEXT NOT NULL,
     maint_status VARCHAR(50) NOT NULL,
-    repair_cost INT CHECK (repair_cost >= 0),
-    resolved_time TIMESTAMP NULL,
-    replaced_parts VARCHAR(255),
-    next_maint_date DATE,
-    result TEXT,
     CHECK (maint_status IN ('待處理', '處理中', '已完成', '取消')),
-    CHECK (resolved_time IS NULL OR resolved_time >= repair_time),
-    CHECK (
-        next_maint_date IS NULL
-        OR (
-            resolved_time IS NOT NULL
-            AND next_maint_date > CAST(resolved_time AS DATE)
-        )
-        OR (
-            resolved_time IS NULL
-            AND next_maint_date > CAST(repair_time AS DATE)
-        )
-    ),
-    FOREIGN KEY (internal_id) REFERENCES ITEM(internal_id),
-    FOREIGN KEY (reporter_id) REFERENCES `USER`(user_id),
-    FOREIGN KEY (handler_id) REFERENCES `USER`(user_id),
-    FOREIGN KEY (vendor_id) REFERENCES VENDOR(vendor_id)
+    FOREIGN KEY (internal_id) REFERENCES ITEM(internal_id) ON DELETE RESTRICT,
+    FOREIGN KEY (reporter_id) REFERENCES `USER`(user_id) ON DELETE RESTRICT,
+    FOREIGN KEY (handler_id) REFERENCES `USER`(user_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 /* -------------------------
-   12. Status history
+   12. Maintenance process records
+   ------------------------- */
+CREATE TABLE MAINTENANCE_PROCESS_RECORD (
+    process_id INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id INT NOT NULL,
+    vendor_id INT NULL,
+    process_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    repair_cost INT NULL CHECK (repair_cost IS NULL OR repair_cost >= 0),
+    completed_time TIMESTAMP NULL,
+    replaced_parts VARCHAR(255),
+    next_maintenance_date DATE,
+    repair_result TEXT,
+    CHECK (completed_time IS NULL OR completed_time >= process_time),
+    CHECK (
+        next_maintenance_date IS NULL
+        OR (
+            completed_time IS NOT NULL
+            AND next_maintenance_date > CAST(completed_time AS DATE)
+        )
+    ),
+    FOREIGN KEY (ticket_id) REFERENCES MAINTENANCE_TICKET(ticket_id) ON DELETE RESTRICT,
+    FOREIGN KEY (vendor_id) REFERENCES VENDOR(vendor_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+/* -------------------------
+   13. Status history
    ------------------------- */
 CREATE TABLE STATUS_HISTORY (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -220,5 +227,7 @@ CREATE INDEX idx_item_status_type ON ITEM(current_status, manage_type);
 CREATE INDEX idx_item_space ON ITEM(space_id);
 CREATE INDEX idx_borrow_item_status ON BORROW_RECORD(internal_id, status, actual_return);
 CREATE INDEX idx_maint_item_status ON MAINTENANCE_TICKET(internal_id, maint_status);
+CREATE INDEX idx_maint_process_ticket_time ON MAINTENANCE_PROCESS_RECORD(ticket_id, process_time);
+CREATE INDEX idx_maint_process_vendor_time ON MAINTENANCE_PROCESS_RECORD(vendor_id, process_time);
 CREATE INDEX idx_consume_item_time ON CONSUME_RECORD(internal_id, consume_time);
 CREATE INDEX idx_status_history_item_time ON STATUS_HISTORY(internal_id, change_time);

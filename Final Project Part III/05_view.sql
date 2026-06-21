@@ -419,4 +419,41 @@ FROM maintenance_ticket mt
 JOIN item i
     ON mt.item_id = i.item_id
 JOIN app_user reporter
-    ON mt.reporter_user_id = reporter.user_id;
+    ON mt.reporter_user_id = reporter.user_id
+
+UNION ALL
+
+SELECT
+    i.item_id AS item_id,
+    i.item_code AS item_code,
+    i.item_name AS item_name,
+    '維修處理' AS event_type,
+    COALESCE(mpr.completed_time, mpr.process_time) AS event_time,
+    handler.user_id AS actor_id,
+    handler.user_code AS actor_code,
+    handler.user_name AS actor_name,
+    CONCAT(
+        '維修費用：',
+        IFNULL(CAST(mpr.repair_cost AS CHAR), '未填寫'),
+        '；廠商：',
+        IFNULL(v.vendor_name, '系內處理'),
+        '；維修結果：',
+        IFNULL(mpr.repair_result, '未填寫')
+    ) AS event_detail,
+    CONCAT(
+        '完成時間：',
+        IFNULL(DATE_FORMAT(mpr.completed_time, '%Y-%m-%d %H:%i:%s'), '尚未完成'),
+        '；更換零件：',
+        IFNULL(mpr.replaced_parts, '無'),
+        '；下次保養：',
+        IFNULL(DATE_FORMAT(mpr.next_maintenance_date, '%Y-%m-%d'), '未設定')
+    ) AS note
+FROM maintenance_process_record mpr
+JOIN maintenance_ticket mt
+    ON mpr.ticket_id = mt.ticket_id
+JOIN item i
+    ON mt.item_id = i.item_id
+LEFT JOIN app_user handler
+    ON mt.handler_user_id = handler.user_id
+LEFT JOIN vendor v
+    ON mpr.vendor_id = v.vendor_id;

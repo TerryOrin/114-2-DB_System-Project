@@ -1164,24 +1164,25 @@ CREATE TABLE status_history (
 
 ## 七、View 設計與使用說明
 
-本節依第六章 Schema 整理 View 設計。View 作為不同角色的查詢介面，負責限制可見資料範圍；需要依登入者本人限制的查詢，則由後端 route 以參數化條件補上。
+本節依第六章 Schema 整理 View 設計。View 作為不同系統角色的查詢介面，負責限制可見資料範圍；需要依使用者身分限制的查詢，則由後端以參數化條件補上。
+
+本專題聚焦於設備、耗材、借用、維修與稽核資料庫設計，因此不納入帳號驗證、密碼儲存或登入流程之實作；`app_user` 與 `role_type` 僅用於記錄系統角色及各項交易、歷程資料的相關人員。
 
 ### 7.1 View 設計與系統使用對照
 
 | View | 對象 | 用途 | 篩選條件與資料保護 | 系統使用位置 |
 | --- | --- | --- | --- | --- |
-| `vw_Login_User_Role` | 登入流程（所有角色） | 登入後取得使用者與角色資訊。 | 由後端依登入輸入的 `user_id` 查詢單一使用者；只回傳登入判斷與角色顯示所需欄位，不暴露設備、財務或保管資訊。依第六章 Schema 實作時，來源為 `app_user` 與 `role_type`。 | `db.get_login_user` |
 | `vw_Student_Available_Borrowable_Items` | 全系師生 | 查詢可借用設備。 | 只顯示 `current_status = 1`，且 `item_type` 為 `1` 財產設備或 `2` 非列管設備的可借用物品；財產設備以 `item.is_borrowable` 判斷，非列管設備以 `reusable_equipment.is_borrowable` 判斷；不顯示取得金額、經費來源、保管人等敏感資料。 | `/student/items` |
-| `vw_Student_Current_Borrowed_Items` | 全系師生 | 查詢目前借用中或逾期未歸還的設備。 | 只顯示借用中或逾期且尚未歸還的紀錄，例如 `borrow_status IN (1, 3)` 且 `actual_return_time IS NULL`；後端再依登入者加上 `user_id = login_user_id` 條件，只顯示本人借用紀錄。 | `/student/returns` |
+| `vw_Student_Current_Borrowed_Items` | 全系師生 | 查詢目前借用中或逾期未歸還的設備。 | 只顯示借用中或逾期且尚未歸還的紀錄，例如 `borrow_status IN (1, 3)` 且 `actual_return_time IS NULL`；後端再依使用者身分加上 `user_id = current_user_id` 條件，只顯示本人借用紀錄。 | `/student/returns` |
 | `vw_Student_Available_Consumables` | 全系師生 | 查詢可領用耗材。 | 只顯示 `item_type = 3`、`current_status = 1` 且 `stock_quantity > 0` 的耗材；不顯示採購金額、保管人與其他管理欄位。 | `/student/consumables` |
 | `vw_Student_Maintenance_Reportable_Items` | 全系師生 | 查詢可回報維修的設備。 | 只顯示財產設備或非列管設備，排除耗材、報廢項目，以及已有待處理或處理中維修工單的物品；不顯示取得金額、經費來源與保管人資訊。 | `/student/maintenance/report` |
 | `vw_Student_Maintenance_Handlers` | 全系師生 | 報修時查詢可指派的設備負責人。 | 只顯示角色為設備負責人的使用者，例如 `role_id = 3`；僅回傳負責人識別與姓名，避免暴露不必要的使用者資料。 | `/student/maintenance/report`、`load_default_maintenance_handler_id` |
-| `vw_Supervisor_Assigned_Maintenance_Tasks` | 設備負責人 | 查看待處理、處理中的維修工單。 | 只顯示 `maintenance_status IN (1, 2)` 的資料。後端再依登入者加上 `handler_id = login_user_id` 條件，限制只能查看自己被指派的工單。 | `/supervisor/tasks` |
-| `vw_Supervisor_Maintenance_History` | 設備負責人 | 查看已完成或取消的維修工單。 | 只顯示 `maintenance_status IN (3, 4)` 的歷史工單；後端再依登入者加上 `handler_id = login_user_id` 條件，限制只能查看自己被指派的歷史資料。 | `/supervisor/history` |
+| `vw_Supervisor_Assigned_Maintenance_Tasks` | 設備負責人 | 查看待處理、處理中的維修工單。 | 只顯示 `maintenance_status IN (1, 2)` 的資料。後端再依使用者身分加上 `handler_id = current_user_id` 條件，限制只能查看自己被指派的工單。 | `/supervisor/tasks` |
+| `vw_Supervisor_Maintenance_History` | 設備負責人 | 查看已完成或取消的維修工單。 | 只顯示 `maintenance_status IN (3, 4)` 的歷史工單；後端再依使用者身分加上 `handler_id = current_user_id` 條件，限制只能查看自己被指派的歷史資料。 | `/supervisor/history` |
 | `vw_Admin_Asset_Master` | 系所管理員 | 全系財產設備盤點。 | 顯示財產編號、經費來源、取得金額、耐用年限與保管人等管理欄位，僅供系所管理員使用。 | `/admin/assets` |
 | `vw_Admin_Consumable_Alert` | 系所管理員 | 低庫存耗材預警。 | 篩選 `item_type = 3`、未報廢且 `stock_quantity <= min_stock` 的耗材。 | 目前 `equipment_web` 的 `/admin/consumables` 以直接查詢呈現完整耗材清單；此 View 可作為低庫存預警查詢使用。 |
 | `vw_Admin_Maintenance_Ticket_Master` | 系所管理員 | 全系維修工單總覽。 | 顯示所有維修狀態的工單，可由後端依 `maintenance_status` 篩選；維護廠商、費用、完成時間與維修結果由最新一筆 `maintenance_process_record` 補充。 | `/admin/maintenance` |
-| `vw_Admin_Audit_Trail` | 系所管理員 | 整合使用歷程。 | 以 `UNION ALL` 整合狀態異動、設備借用與維修報修事件，統一輸出事件時間、事件類型、操作者與事件內容，供追蹤設備流向與責任。 | `/admin/audit` |
+| `vw_Admin_Audit_Trail` | 系所管理員 | 整合使用歷程。 | 以 `UNION ALL` 整合狀態異動、設備借用、維修報修與維修處理事件，統一輸出事件時間、事件類型、操作者與事件內容，供追蹤設備流向與責任。 | `/admin/audit` |
 
 ### 7.2 `05_view.sql` View 對應完整 SQL
 
@@ -1629,7 +1630,44 @@ FROM maintenance_ticket mt
 JOIN item i
     ON mt.item_id = i.item_id
 JOIN app_user reporter
-    ON mt.reporter_user_id = reporter.user_id;
+    ON mt.reporter_user_id = reporter.user_id
+
+UNION ALL
+
+SELECT
+    i.item_id AS item_id,
+    i.item_code AS item_code,
+    i.item_name AS item_name,
+    '維修處理' AS event_type,
+    COALESCE(mpr.completed_time, mpr.process_time) AS event_time,
+    handler.user_id AS actor_id,
+    handler.user_code AS actor_code,
+    handler.user_name AS actor_name,
+    CONCAT(
+        '維修費用：',
+        IFNULL(CAST(mpr.repair_cost AS CHAR), '未填寫'),
+        '；廠商：',
+        IFNULL(v.vendor_name, '系內處理'),
+        '；維修結果：',
+        IFNULL(mpr.repair_result, '未填寫')
+    ) AS event_detail,
+    CONCAT(
+        '完成時間：',
+        IFNULL(DATE_FORMAT(mpr.completed_time, '%Y-%m-%d %H:%i:%s'), '尚未完成'),
+        '；更換零件：',
+        IFNULL(mpr.replaced_parts, '無'),
+        '；下次保養：',
+        IFNULL(DATE_FORMAT(mpr.next_maintenance_date, '%Y-%m-%d'), '未設定')
+    ) AS note
+FROM maintenance_process_record mpr
+JOIN maintenance_ticket mt
+    ON mpr.ticket_id = mt.ticket_id
+JOIN item i
+    ON mt.item_id = i.item_id
+LEFT JOIN app_user handler
+    ON mt.handler_user_id = handler.user_id
+LEFT JOIN vendor v
+    ON mpr.vendor_id = v.vendor_id;
 ```
 
 ### 7.3 `equipment_web` 直接 SQL 查詢頁面

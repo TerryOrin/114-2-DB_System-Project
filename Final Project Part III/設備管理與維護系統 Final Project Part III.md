@@ -146,11 +146,7 @@ tags: [資料庫系統]
 ## 五、ER Diagram（Entity-Relationship Diagram）/ Database schema
 ### ER Diagram
 
-![image](https://hackmd.io/_uploads/ryJezqBWMl.png)
-
-
-### Database schema
-![Frame (1) (1)](https://hackmd.io/_uploads/HyeLjv2ezx.png)
+![image](FPP_3_ERD.png)
 
 ## 六、資料庫 Schema 設計與 SQL 語法說明
 
